@@ -33,16 +33,28 @@ This application provides a web-based interface for managing VMware vCenter envi
    cd vmware-vcenter-management
    ```
 
-2. Install backend dependencies:
+2. Set up a virtual environment:
+   ```
+   python3 -m venv venv
+   source venv/bin/activate  # On Windows use `venv\Scripts\activate`
+   ```
+
+3. Install backend dependencies:
    ```
    pip install -r requirements.txt
    ```
 
-3. Install frontend dependencies:
+4. Install frontend dependencies:
    ```
    cd app/frontend
    npm install
+   cd ../..
    ```
+
+Note: Always activate the virtual environment before running the application:
+```
+source venv/bin/activate  # On Windows use `venv\Scripts\activate`
+```
 
 ## Configuration
 
