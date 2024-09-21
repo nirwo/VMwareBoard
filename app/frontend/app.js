@@ -40,7 +40,7 @@ const app = Vue.createApp({
          */
         async connectToVCenter() {
             try {
-                const response = await axios.post('http://localhost:5079/api/vcconnect', {
+                const response = await axios.post('http://SERVER_HOSTNAME:5079/api/vcconnect', {
                     host: this.vcenterHost,
                     user: this.vcenterUser,
                     password: this.vcenterPassword
