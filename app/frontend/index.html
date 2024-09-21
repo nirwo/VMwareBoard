@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VMware vCenter Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+    <div id="app" class="container mx-auto p-4">
+        <h1 class="text-3xl font-bold mb-4">VMware vCenter Management</h1>
+        <button @click="toggleDarkMode" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-4">
+            Toggle Dark Mode
+        </button>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div v-for="vm in vms" :key="vm.name" class="bg-white dark:bg-gray-800 p-4 rounded shadow">
+                <h2 class="text-xl font-semibold mb-2">{{ vm.name }}</h2>
+                <p>Power State: {{ vm.power_state }}</p>
+                <p>CPU: {{ vm.cpu }}</p>
+                <p>Memory: {{ vm.memory }} MB</p>
+                <button @click="powerOnOff(vm)" class="bg-green-500 hover:bg-green-700 text-white font-bold py-1 px-2 rounded mt-2">
+                    {{ vm.power_state === 'poweredOn' ? 'Power Off' : 'Power On' }}
+                </button>
+            </div>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
