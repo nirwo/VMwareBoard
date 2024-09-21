@@ -7,7 +7,8 @@ const app = Vue.createApp({
             error: null,
             selectedVM: null,
             snapshotName: '',
-            snapshotDescription: ''
+            snapshotDescription: '',
+            selectedTab: 'general'
         }
     },
     methods: {

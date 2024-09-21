@@ -31,46 +31,92 @@
                 <p>Memory: {{ vm.memory }} MB</p>
                 <p>Guest OS: {{ vm.guest_os }}</p>
                 <p>IP Address: {{ vm.ip_address || 'N/A' }}</p>
+                <p>UUID: {{ vm.uuid }}</p>
+                <p>VMware Tools: {{ vm.tools_status }} (v{{ vm.tools_version }})</p>
                 <button @click="powerOnOff(vm)" class="bg-green-500 hover:bg-green-700 text-white font-bold py-1 px-2 rounded mt-2">
                     {{ vm.power_state === 'poweredOn' ? 'Power Off' : 'Power On' }}
                 </button>
                 <button @click="selectVM(vm)" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded mt-2 ml-2">
-                    Manage Snapshots
+                    Manage VM
                 </button>
             </div>
         </div>
 
-        <!-- Snapshot Management Modal -->
+        <!-- VM Management Modal -->
         <div v-if="selectedVM" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
-            <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-gray-800">
-                <h3 class="text-lg font-semibold mb-4">Manage Snapshots for {{ selectedVM.name }}</h3>
+            <div class="relative top-20 mx-auto p-5 border w-3/4 shadow-lg rounded-md bg-white dark:bg-gray-800">
+                <h3 class="text-lg font-semibold mb-4">Manage VM: {{ selectedVM.name }}</h3>
                 
-                <!-- Create Snapshot Form -->
+                <!-- Tabs -->
                 <div class="mb-4">
-                    <input v-model="snapshotName" placeholder="Snapshot Name" class="w-full p-2 mb-2 border rounded dark:bg-gray-700">
-                    <textarea v-model="snapshotDescription" placeholder="Snapshot Description" class="w-full p-2 mb-2 border rounded dark:bg-gray-700"></textarea>
-                    <button @click="createSnapshot" class="bg-green-500 hover:bg-green-700 text-white font-bold py-1 px-2 rounded">
-                        Create Snapshot
-                    </button>
+                    <button @click="selectedTab = 'general'" :class="{'bg-blue-500': selectedTab === 'general', 'bg-gray-300': selectedTab !== 'general'}" class="px-4 py-2 rounded-tl-md rounded-tr-md">General</button>
+                    <button @click="selectedTab = 'snapshots'" :class="{'bg-blue-500': selectedTab === 'snapshots', 'bg-gray-300': selectedTab !== 'snapshots'}" class="px-4 py-2 rounded-tl-md rounded-tr-md">Snapshots</button>
+                    <button @click="selectedTab = 'networks'" :class="{'bg-blue-500': selectedTab === 'networks', 'bg-gray-300': selectedTab !== 'networks'}" class="px-4 py-2 rounded-tl-md rounded-tr-md">Networks</button>
+                    <button @click="selectedTab = 'datastores'" :class="{'bg-blue-500': selectedTab === 'datastores', 'bg-gray-300': selectedTab !== 'datastores'}" class="px-4 py-2 rounded-tl-md rounded-tr-md">Datastores</button>
                 </div>
 
-                <!-- Existing Snapshots -->
-                <div v-if="selectedVM.snapshots.length > 0">
+                <!-- General Tab -->
+                <div v-if="selectedTab === 'general'">
+                    <h4 class="font-semibold mb-2">General Information:</h4>
+                    <p>Power State: {{ selectedVM.power_state }}</p>
+                    <p>CPU: {{ selectedVM.cpu }}</p>
+                    <p>Memory: {{ selectedVM.memory }} MB</p>
+                    <p>Guest OS: {{ selectedVM.guest_os }}</p>
+                    <p>IP Address: {{ selectedVM.ip_address || 'N/A' }}</p>
+                    <p>UUID: {{ selectedVM.uuid }}</p>
+                    <p>VMware Tools: {{ selectedVM.tools_status }} (v{{ selectedVM.tools_version }})</p>
+                </div>
+
+                <!-- Snapshots Tab -->
+                <div v-if="selectedTab === 'snapshots'">
+                    <h4 class="font-semibold mb-2">Create Snapshot:</h4>
+                    <div class="mb-4">
+                        <input v-model="snapshotName" placeholder="Snapshot Name" class="w-full p-2 mb-2 border rounded dark:bg-gray-700">
+                        <textarea v-model="snapshotDescription" placeholder="Snapshot Description" class="w-full p-2 mb-2 border rounded dark:bg-gray-700"></textarea>
+                        <button @click="createSnapshot" class="bg-green-500 hover:bg-green-700 text-white font-bold py-1 px-2 rounded">
+                            Create Snapshot
+                        </button>
+                    </div>
+
                     <h4 class="font-semibold mb-2">Existing Snapshots:</h4>
+                    <div v-if="selectedVM.snapshots.length > 0">
+                        <ul>
+                            <li v-for="snapshot in selectedVM.snapshots" :key="snapshot.id" class="mb-2">
+                                <span>{{ snapshot.name }} ({{ snapshot.state }})</span>
+                                <button @click="revertSnapshot(snapshot)" class="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-1 px-2 rounded ml-2">
+                                    Revert
+                                </button>
+                                <button @click="deleteSnapshot(snapshot)" class="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-2 rounded ml-2">
+                                    Delete
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                    <div v-else>
+                        <p>No snapshots available.</p>
+                    </div>
+                </div>
+
+                <!-- Networks Tab -->
+                <div v-if="selectedTab === 'networks'">
+                    <h4 class="font-semibold mb-2">Networks:</h4>
                     <ul>
-                        <li v-for="snapshot in selectedVM.snapshots" :key="snapshot.id" class="mb-2">
-                            <span>{{ snapshot.name }}</span>
-                            <button @click="revertSnapshot(snapshot)" class="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-1 px-2 rounded ml-2">
-                                Revert
-                            </button>
-                            <button @click="deleteSnapshot(snapshot)" class="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-2 rounded ml-2">
-                                Delete
-                            </button>
+                        <li v-for="network in selectedVM.networks" :key="network.name" class="mb-2">
+                            <span>{{ network.name }} ({{ network.accessible ? 'Accessible' : 'Not Accessible' }})</span>
                         </li>
                     </ul>
                 </div>
-                <div v-else>
-                    <p>No snapshots available.</p>
+
+                <!-- Datastores Tab -->
+                <div v-if="selectedTab === 'datastores'">
+                    <h4 class="font-semibold mb-2">Datastores:</h4>
+                    <ul>
+                        <li v-for="datastore in selectedVM.datastores" :key="datastore.name" class="mb-2">
+                            <span>{{ datastore.name }}</span>
+                            <p>Capacity: {{ (datastore.capacity / (1024 * 1024 * 1024)).toFixed(2) }} GB</p>
+                            <p>Free Space: {{ (datastore.freeSpace / (1024 * 1024 * 1024)).toFixed(2) }} GB</p>
+                        </li>
+                    </ul>
                 </div>
 
                 <button @click="selectedVM = null" class="mt-4 bg-gray-500 hover:bg-gray-700 text-white font-bold py-1 px-2 rounded">

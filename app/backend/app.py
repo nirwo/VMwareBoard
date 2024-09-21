@@ -6,6 +6,7 @@ import ssl
 import os
 from dotenv import load_dotenv
 from datetime import datetime
+import atexit
 
 app = Flask(__name__, static_folder='../frontend')
 CORS(app)
@@ -22,7 +23,9 @@ def get_vcenter_connection():
     context = ssl.create_default_context()
     context.check_hostname = False
     context.verify_mode = ssl.CERT_NONE
-    return SmartConnect(host=VCENTER_HOST, user=VCENTER_USER, pwd=VCENTER_PASSWORD, sslContext=context)
+    si = SmartConnect(host=VCENTER_HOST, user=VCENTER_USER, pwd=VCENTER_PASSWORD, sslContext=context)
+    atexit.register(Disconnect, si)
+    return si
 
 def get_vm_by_name(si, vm_name):
     content = si.RetrieveContent()
@@ -44,9 +47,29 @@ def get_vm_snapshots(vm):
                 'name': snap.name,
                 'description': snap.description,
                 'creation_time': snap.createTime.isoformat(),
-                'id': snap.id
+                'id': snap.id,
+                'state': snap.state
             })
     return snapshots
+
+def get_vm_networks(vm):
+    networks = []
+    for network in vm.network:
+        networks.append({
+            'name': network.name,
+            'accessible': network.summary.accessible
+        })
+    return networks
+
+def get_vm_datastores(vm):
+    datastores = []
+    for datastore in vm.datastore:
+        datastores.append({
+            'name': datastore.name,
+            'capacity': datastore.summary.capacity,
+            'freeSpace': datastore.summary.freeSpace
+        })
+    return datastores
 
 @app.route('/')
 def serve_frontend():
@@ -75,11 +98,15 @@ def get_vms():
             'memory': child.config.hardware.memoryMB,
             'guest_os': child.config.guestFullName,
             'ip_address': child.guest.ipAddress,
-            'snapshots': get_vm_snapshots(child)
+            'snapshots': get_vm_snapshots(child),
+            'networks': get_vm_networks(child),
+            'datastores': get_vm_datastores(child),
+            'tools_status': child.guest.toolsStatus,
+            'tools_version': child.guest.toolsVersion,
+            'uuid': child.config.uuid
         }
         vms.append(vm_info)
     
-    Disconnect(si)
     return jsonify(vms)
 
 @app.route('/api/vm/<string:vm_name>/power', methods=['POST'])
