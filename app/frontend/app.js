@@ -119,15 +119,23 @@ const app = Vue.createApp({
          */
         async fetchVMs() {
             if (!this.isConnected) return;
-            
+        
             this.loading = true;
             this.error = null;
             try {
                 const response = await axios.get('http://localhost:5079/api/vms');
-                this.vms = response.data;
+                if (response.data && Array.isArray(response.data)) {
+                    this.vms = response.data;
+                } else {
+                    throw new Error('Invalid response format');
+                }
             } catch (error) {
                 console.error('Error fetching VMs:', error);
                 this.error = 'Failed to fetch VMs. Please try again.';
+                if (error.response) {
+                    console.error('Response data:', error.response.data);
+                    console.error('Response status:', error.response.status);
+                }
             } finally {
                 this.loading = false;
             }

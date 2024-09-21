@@ -14,6 +14,7 @@ from flask_cors import CORS
 from pyVmomi import vim
 from pyVim.connect import SmartConnect, Disconnect
 import ssl
+import urllib3
 import os
 from dotenv import load_dotenv
 from datetime import datetime
@@ -43,12 +44,16 @@ def get_vcenter_connection():
     context.check_hostname = False
     context.verify_mode = ssl.CERT_NONE
     
+    # Disable SSL warnings
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    
     try:
         si = SmartConnect(
             host=session['vcenter_connection']['host'],
             user=session['vcenter_connection']['user'],
             pwd=session['vcenter_connection']['password'],
-            sslContext=context
+            sslContext=context,
+            disableSslCertValidation=True
         )
         atexit.register(Disconnect, si)
         return si
