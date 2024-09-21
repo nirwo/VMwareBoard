@@ -60,7 +60,7 @@ const app = Vue.createApp({
          */
         async disconnectFromVCenter() {
             try {
-                await axios.post('http://localhost:5079/api/vcdisconnect');
+                await axios.post('http://SERVER_HOSTNAME:5079/api/vcdisconnect');
                 this.isConnected = false;
                 this.vms = [];
                 this.error = null;
@@ -74,7 +74,7 @@ const app = Vue.createApp({
          */
         async checkVCenterStatus() {
             try {
-                const response = await axios.get('http://localhost:5079/api/vcstatus');
+                const response = await axios.get('http://SERVER_HOSTNAME:5079/api/vcstatus');
                 this.isConnected = response.data.status === 'connected';
                 if (this.isConnected) {
                     this.vcenterHost = response.data.host;
@@ -123,7 +123,7 @@ const app = Vue.createApp({
             this.loading = true;
             this.error = null;
             try {
-                const response = await axios.get('http://localhost:5079/api/vms');
+                const response = await axios.get('http://SERVER_HOSTNAME:5079/api/vms');
                 if (response.data && Array.isArray(response.data)) {
                     this.vms = response.data;
                 } else {
