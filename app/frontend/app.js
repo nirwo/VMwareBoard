@@ -4,7 +4,10 @@ const app = Vue.createApp({
             vms: [],
             darkMode: false,
             loading: false,
-            error: null
+            error: null,
+            selectedVM: null,
+            snapshotName: '',
+            snapshotDescription: ''
         }
     },
     methods: {
@@ -37,6 +40,44 @@ const app = Vue.createApp({
         toggleDarkMode() {
             this.darkMode = !this.darkMode;
             document.documentElement.classList.toggle('dark', this.darkMode);
+        },
+        selectVM(vm) {
+            this.selectedVM = vm;
+        },
+        async createSnapshot() {
+            try {
+                await axios.post(`http://localhost:5079/api/vm/${this.selectedVM.name}/snapshot`, {
+                    name: this.snapshotName,
+                    description: this.snapshotDescription
+                });
+                alert('Snapshot creation initiated');
+                this.snapshotName = '';
+                this.snapshotDescription = '';
+                setTimeout(() => this.fetchVMs(), 2000);
+            } catch (error) {
+                console.error('Error creating snapshot:', error);
+                alert('Failed to create snapshot. Please try again.');
+            }
+        },
+        async revertSnapshot(snapshot) {
+            try {
+                await axios.post(`http://localhost:5079/api/vm/${this.selectedVM.name}/snapshot/${snapshot.id}/revert`);
+                alert('Revert to snapshot initiated');
+                setTimeout(() => this.fetchVMs(), 2000);
+            } catch (error) {
+                console.error('Error reverting snapshot:', error);
+                alert('Failed to revert snapshot. Please try again.');
+            }
+        },
+        async deleteSnapshot(snapshot) {
+            try {
+                await axios.delete(`http://localhost:5079/api/vm/${this.selectedVM.name}/snapshot/${snapshot.id}`);
+                alert('Snapshot deletion initiated');
+                setTimeout(() => this.fetchVMs(), 2000);
+            } catch (error) {
+                console.error('Error deleting snapshot:', error);
+                alert('Failed to delete snapshot. Please try again.');
+            }
         }
     },
     mounted() {

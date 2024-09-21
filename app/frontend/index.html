@@ -29,8 +29,52 @@
                 <p>Power State: {{ vm.power_state }}</p>
                 <p>CPU: {{ vm.cpu }}</p>
                 <p>Memory: {{ vm.memory }} MB</p>
+                <p>Guest OS: {{ vm.guest_os }}</p>
+                <p>IP Address: {{ vm.ip_address || 'N/A' }}</p>
                 <button @click="powerOnOff(vm)" class="bg-green-500 hover:bg-green-700 text-white font-bold py-1 px-2 rounded mt-2">
                     {{ vm.power_state === 'poweredOn' ? 'Power Off' : 'Power On' }}
+                </button>
+                <button @click="selectVM(vm)" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded mt-2 ml-2">
+                    Manage Snapshots
+                </button>
+            </div>
+        </div>
+
+        <!-- Snapshot Management Modal -->
+        <div v-if="selectedVM" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
+            <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-gray-800">
+                <h3 class="text-lg font-semibold mb-4">Manage Snapshots for {{ selectedVM.name }}</h3>
+                
+                <!-- Create Snapshot Form -->
+                <div class="mb-4">
+                    <input v-model="snapshotName" placeholder="Snapshot Name" class="w-full p-2 mb-2 border rounded dark:bg-gray-700">
+                    <textarea v-model="snapshotDescription" placeholder="Snapshot Description" class="w-full p-2 mb-2 border rounded dark:bg-gray-700"></textarea>
+                    <button @click="createSnapshot" class="bg-green-500 hover:bg-green-700 text-white font-bold py-1 px-2 rounded">
+                        Create Snapshot
+                    </button>
+                </div>
+
+                <!-- Existing Snapshots -->
+                <div v-if="selectedVM.snapshots.length > 0">
+                    <h4 class="font-semibold mb-2">Existing Snapshots:</h4>
+                    <ul>
+                        <li v-for="snapshot in selectedVM.snapshots" :key="snapshot.id" class="mb-2">
+                            <span>{{ snapshot.name }}</span>
+                            <button @click="revertSnapshot(snapshot)" class="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-1 px-2 rounded ml-2">
+                                Revert
+                            </button>
+                            <button @click="deleteSnapshot(snapshot)" class="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-2 rounded ml-2">
+                                Delete
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+                <div v-else>
+                    <p>No snapshots available.</p>
+                </div>
+
+                <button @click="selectedVM = null" class="mt-4 bg-gray-500 hover:bg-gray-700 text-white font-bold py-1 px-2 rounded">
+                    Close
                 </button>
             </div>
         </div>
