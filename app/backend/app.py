@@ -18,8 +18,11 @@ import os
 from dotenv import load_dotenv
 from datetime import datetime
 import atexit
+from concurrent.futures import ThreadPoolExecutor
 
 app = Flask(__name__, static_folder='../frontend')
+app.config['MAX_PARALLEL_TASKS'] = 5  # Default value, can be changed
+executor = ThreadPoolExecutor(max_workers=app.config['MAX_PARALLEL_TASKS'])
 CORS(app)
 app.secret_key = os.urandom(24)  # Set a secret key for session management
 
@@ -314,6 +317,98 @@ def delete_snapshot(vm_name, snapshot_id):
     task = snapshot.snapshot.RemoveSnapshot_Task(removeChildren=False)
     Disconnect(si)
     return jsonify({'status': 'success', 'message': f'Snapshot deletion initiated for VM {vm_name}'})
+
+@app.route('/api/templates', methods=['GET'])
+def get_templates():
+    """
+    Retrieve all VM templates from vCenter.
+    
+    Returns:
+        JSON: List of available VM templates.
+    """
+    si = get_vcenter_connection()
+    content = si.RetrieveContent()
+    container = content.rootFolder
+    view_type = [vim.VirtualMachine]
+    recursive = True
+    container_view = content.viewManager.CreateContainerView(container, view_type, recursive)
+    children = container_view.view
+    
+    templates = [child.name for child in children if child.config.template]
+    Disconnect(si)
+    return jsonify(templates)
+
+@app.route('/api/customizations', methods=['GET'])
+def get_customizations():
+    """
+    Retrieve all VMware customization specifications from vCenter.
+    
+    Returns:
+        JSON: List of available customization specifications.
+    """
+    si = get_vcenter_connection()
+    content = si.RetrieveContent()
+    customization_spec_manager = content.customizationSpecManager
+    
+    customizations = [spec.name for spec in customization_spec_manager.info]
+    Disconnect(si)
+    return jsonify(customizations)
+
+@app.route('/api/provision', methods=['POST'])
+def provision_vms():
+    """
+    Provision multiple VMs based on the provided specifications.
+    
+    Expects JSON payload with:
+    - template_name: Name of the template to use
+    - customization_spec: Name of the customization specification to use
+    - vm_count: Number of VMs to provision
+    - vm_name_prefix: Prefix for the VM names
+    
+    Returns:
+        JSON: Status of the provisioning operation.
+    """
+    data = request.json
+    template_name = data.get('template_name')
+    customization_spec = data.get('customization_spec')
+    vm_count = data.get('vm_count', 1)
+    vm_name_prefix = data.get('vm_name_prefix', 'NewVM')
+    
+    si = get_vcenter_connection()
+    content = si.RetrieveContent()
+    
+    # Get the template
+    template = get_vm_by_name(si, template_name)
+    if not template:
+        Disconnect(si)
+        return jsonify({'status': 'error', 'message': 'Template not found'}), 404
+    
+    # Get the customization specification
+    customization_spec_manager = content.customizationSpecManager
+    customization = customization_spec_manager.GetCustomizationSpec(customization_spec)
+    if not customization:
+        Disconnect(si)
+        return jsonify({'status': 'error', 'message': 'Customization specification not found'}), 404
+    
+    # Get the first datastore and resource pool (you might want to make this configurable)
+    datastore = content.rootFolder.childEntity[0].datastore[0]
+    resource_pool = content.rootFolder.childEntity[0].hostFolder.childEntity[0].resourcePool
+    
+    def clone_vm(i):
+        vm_name = f"{vm_name_prefix}-{i+1}"
+        clonespec = vim.vm.CloneSpec()
+        clonespec.location = vim.vm.RelocateSpec(datastore=datastore, pool=resource_pool)
+        clonespec.customization = customization.spec
+        clonespec.powerOn = True
+        
+        task = template.Clone(folder=template.parent, name=vm_name, spec=clonespec)
+        return task
+    
+    # Submit tasks to the executor
+    futures = [executor.submit(clone_vm, i) for i in range(vm_count)]
+    
+    Disconnect(si)
+    return jsonify({'status': 'success', 'message': f'Provisioning of {vm_count} VMs initiated'})
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5079)

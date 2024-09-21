@@ -23,7 +23,15 @@ const app = Vue.createApp({
             isConnected: false,
             vcenterHost: '',
             vcenterUser: '',
-            vcenterPassword: ''
+            vcenterPassword: '',
+            templates: [],
+            customizations: [],
+            provisionForm: {
+                templateName: '',
+                customizationSpec: '',
+                vmCount: 1,
+                vmNamePrefix: 'NewVM'
+            }
         }
     },
     methods: {
@@ -71,10 +79,39 @@ const app = Vue.createApp({
                 if (this.isConnected) {
                     this.vcenterHost = response.data.host;
                     this.fetchVMs();
+                    this.fetchTemplates();
+                    this.fetchCustomizations();
                 }
             } catch (error) {
                 console.error('Error checking vCenter status:', error);
                 this.error = 'Failed to check vCenter connection status.';
+            }
+        },
+        async fetchTemplates() {
+            try {
+                const response = await axios.get('http://localhost:5079/api/templates');
+                this.templates = response.data;
+            } catch (error) {
+                console.error('Error fetching templates:', error);
+                this.error = 'Failed to fetch VM templates.';
+            }
+        },
+        async fetchCustomizations() {
+            try {
+                const response = await axios.get('http://localhost:5079/api/customizations');
+                this.customizations = response.data;
+            } catch (error) {
+                console.error('Error fetching customizations:', error);
+                this.error = 'Failed to fetch customization specifications.';
+            }
+        },
+        async provisionVMs() {
+            try {
+                const response = await axios.post('http://localhost:5079/api/provision', this.provisionForm);
+                alert(response.data.message);
+            } catch (error) {
+                console.error('Error provisioning VMs:', error);
+                alert('Failed to provision VMs. Please try again.');
             }
         },
         /**

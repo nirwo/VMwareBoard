@@ -154,6 +154,36 @@
                 </button>
             </div>
         </div>
+
+        <!-- Provisioning Form -->
+        <div v-if="isConnected" class="mt-8 bg-white dark:bg-gray-800 p-4 rounded shadow">
+            <h2 class="text-2xl font-bold mb-4">Provision VMs</h2>
+            <form @submit.prevent="provisionVMs" class="space-y-4">
+                <div>
+                    <label for="template" class="block mb-1">Template:</label>
+                    <select v-model="provisionForm.templateName" id="template" required class="w-full p-2 border rounded dark:bg-gray-700">
+                        <option v-for="template in templates" :key="template" :value="template">{{ template }}</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="customization" class="block mb-1">Customization Specification:</label>
+                    <select v-model="provisionForm.customizationSpec" id="customization" required class="w-full p-2 border rounded dark:bg-gray-700">
+                        <option v-for="customization in customizations" :key="customization" :value="customization">{{ customization }}</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="vmCount" class="block mb-1">Number of VMs:</label>
+                    <input v-model.number="provisionForm.vmCount" id="vmCount" type="number" min="1" required class="w-full p-2 border rounded dark:bg-gray-700">
+                </div>
+                <div>
+                    <label for="vmNamePrefix" class="block mb-1">VM Name Prefix:</label>
+                    <input v-model="provisionForm.vmNamePrefix" id="vmNamePrefix" type="text" required class="w-full p-2 border rounded dark:bg-gray-700">
+                </div>
+                <button type="submit" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                    Provision VMs
+                </button>
+            </form>
+        </div>
     </div>
     <script src="/app.js"></script>
 </body>
