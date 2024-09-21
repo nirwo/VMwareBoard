@@ -20,6 +20,8 @@ from dotenv import load_dotenv
 from datetime import datetime
 import atexit
 from concurrent.futures import ThreadPoolExecutor
+import logging
+import traceback
 
 app = Flask(__name__, static_folder='../frontend')
 app.config['MAX_PARALLEL_TASKS'] = 5  # Default value, can be changed
@@ -27,8 +29,24 @@ executor = ThreadPoolExecutor(max_workers=app.config['MAX_PARALLEL_TASKS'])
 CORS(app)
 app.secret_key = os.urandom(24)  # Set a secret key for session management
 
+# Set up logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+
 # Load environment variables
 load_dotenv()
+
+# Error handling decorator
+def handle_exceptions(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        try:
+            return f(*args, **kwargs)
+        except Exception as e:
+            logger.error(f"An error occurred: {str(e)}")
+            logger.error(traceback.format_exc())
+            return jsonify({'status': 'error', 'message': str(e)}), 500
+    return decorated_function
 
 def get_vcenter_connection():
     """
@@ -38,6 +56,7 @@ def get_vcenter_connection():
         ServiceInstance: A connection to the vCenter server, or None if connection fails.
     """
     if 'vcenter_connection' not in session:
+        logger.error("No vCenter connection information in session")
         return None
     
     context = ssl.create_default_context()
@@ -56,9 +75,11 @@ def get_vcenter_connection():
             disableSslCertValidation=True
         )
         atexit.register(Disconnect, si)
+        logger.info(f"Successfully connected to vCenter: {session['vcenter_connection']['host']}")
         return si
     except Exception as e:
-        print(f"Error connecting to vCenter: {str(e)}")
+        logger.error(f"Error connecting to vCenter: {str(e)}")
+        logger.error(traceback.format_exc())
         return None
 
 @app.route('/api/vcconnect', methods=['POST'])
@@ -179,6 +200,7 @@ def serve_static(path):
     return send_from_directory(app.static_folder, path)
 
 @app.route('/api/vms', methods=['GET'])
+@handle_exceptions
 def get_vms():
     """
     Retrieve information about all virtual machines in the vCenter inventory.
@@ -186,7 +208,12 @@ def get_vms():
     Returns:
         JSON: List of virtual machines with their details.
     """
+    logger.info("Fetching VMs from vCenter")
     si = get_vcenter_connection()
+    if not si:
+        logger.error("Failed to get vCenter connection")
+        return jsonify({'status': 'error', 'message': 'Failed to connect to vCenter'}), 500
+    
     content = si.RetrieveContent()
     container = content.rootFolder
     view_type = [vim.VirtualMachine]
@@ -196,22 +223,26 @@ def get_vms():
     
     vms = []
     for child in children:
-        vm_info = {
-            'name': child.name,
-            'power_state': child.runtime.powerState,
-            'cpu': child.config.hardware.numCPU,
-            'memory': child.config.hardware.memoryMB,
-            'guest_os': child.config.guestFullName,
-            'ip_address': child.guest.ipAddress,
-            'snapshots': get_vm_snapshots(child),
-            'networks': get_vm_networks(child),
-            'datastores': get_vm_datastores(child),
-            'tools_status': child.guest.toolsStatus,
-            'tools_version': child.guest.toolsVersion,
-            'uuid': child.config.uuid
-        }
-        vms.append(vm_info)
+        try:
+            vm_info = {
+                'name': child.name,
+                'power_state': child.runtime.powerState,
+                'cpu': child.config.hardware.numCPU,
+                'memory': child.config.hardware.memoryMB,
+                'guest_os': child.config.guestFullName,
+                'ip_address': child.guest.ipAddress,
+                'snapshots': get_vm_snapshots(child),
+                'networks': get_vm_networks(child),
+                'datastores': get_vm_datastores(child),
+                'tools_status': child.guest.toolsStatus,
+                'tools_version': child.guest.toolsVersion,
+                'uuid': child.config.uuid
+            }
+            vms.append(vm_info)
+        except Exception as e:
+            logger.error(f"Error processing VM {child.name}: {str(e)}")
     
+    logger.info(f"Successfully fetched {len(vms)} VMs")
     return jsonify(vms)
 
 @app.route('/api/vm/<string:vm_name>/power', methods=['POST'])
