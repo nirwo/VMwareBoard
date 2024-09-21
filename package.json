@@ -7,10 +7,9 @@
     "start": "python app/backend/app.py"
   },
   "dependencies": {
-    "vue": "^3.2.31",
-    "axios": "^0.26.1"
+    "axios": "^1.7.7",
+    "vue": "^3.2.31"
   },
-  "devDependencies": {},
   "author": "Your Name",
   "license": "MIT"
 }
