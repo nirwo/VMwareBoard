@@ -1,3 +1,14 @@
+/**
+ * VMware vCenter Management Frontend Application
+ * 
+ * This Vue.js application provides a user interface for managing VMware vCenter environments.
+ * It allows users to connect to a vCenter server, view and manage virtual machines, and perform
+ * various operations such as power management and snapshot creation.
+ * 
+ * Author: Your Name
+ * Date: September 21, 2024
+ */
+
 const app = Vue.createApp({
     data() {
         return {
@@ -16,6 +27,9 @@ const app = Vue.createApp({
         }
     },
     methods: {
+        /**
+         * Connect to the vCenter server using the provided credentials.
+         */
         async connectToVCenter() {
             try {
                 const response = await axios.post('http://localhost:5079/api/vcconnect', {
@@ -33,6 +47,9 @@ const app = Vue.createApp({
                 this.error = 'Failed to connect to vCenter. Please check your credentials and try again.';
             }
         },
+        /**
+         * Disconnect from the vCenter server.
+         */
         async disconnectFromVCenter() {
             try {
                 await axios.post('http://localhost:5079/api/vcdisconnect');
@@ -44,6 +61,9 @@ const app = Vue.createApp({
                 this.error = 'Failed to disconnect from vCenter.';
             }
         },
+        /**
+         * Check the current vCenter connection status.
+         */
         async checkVCenterStatus() {
             try {
                 const response = await axios.get('http://localhost:5079/api/vcstatus');
@@ -57,6 +77,9 @@ const app = Vue.createApp({
                 this.error = 'Failed to check vCenter connection status.';
             }
         },
+        /**
+         * Fetch the list of virtual machines from the vCenter server.
+         */
         async fetchVMs() {
             if (!this.isConnected) return;
             
@@ -72,6 +95,10 @@ const app = Vue.createApp({
                 this.loading = false;
             }
         },
+        /**
+         * Power on or off a virtual machine.
+         * @param {Object} vm - The virtual machine object.
+         */
         async powerOnOff(vm) {
             const action = vm.power_state === 'poweredOn' ? 'off' : 'on';
             try {
@@ -85,13 +112,23 @@ const app = Vue.createApp({
                 alert(`Failed to power ${action} VM. Please try again.`);
             }
         },
+        /**
+         * Toggle dark mode for the application.
+         */
         toggleDarkMode() {
             this.darkMode = !this.darkMode;
             document.documentElement.classList.toggle('dark', this.darkMode);
         },
+        /**
+         * Select a virtual machine for detailed view.
+         * @param {Object} vm - The virtual machine object.
+         */
         selectVM(vm) {
             this.selectedVM = vm;
         },
+        /**
+         * Create a snapshot of the selected virtual machine.
+         */
         async createSnapshot() {
             try {
                 await axios.post(`http://localhost:5079/api/vm/${this.selectedVM.name}/snapshot`, {
@@ -107,6 +144,10 @@ const app = Vue.createApp({
                 alert('Failed to create snapshot. Please try again.');
             }
         },
+        /**
+         * Revert the selected virtual machine to a specific snapshot.
+         * @param {Object} snapshot - The snapshot object.
+         */
         async revertSnapshot(snapshot) {
             try {
                 await axios.post(`http://localhost:5079/api/vm/${this.selectedVM.name}/snapshot/${snapshot.id}/revert`);
@@ -117,6 +158,10 @@ const app = Vue.createApp({
                 alert('Failed to revert snapshot. Please try again.');
             }
         },
+        /**
+         * Delete a specific snapshot of the selected virtual machine.
+         * @param {Object} snapshot - The snapshot object.
+         */
         async deleteSnapshot(snapshot) {
             try {
                 await axios.delete(`http://localhost:5079/api/vm/${this.selectedVM.name}/snapshot/${snapshot.id}`);
@@ -129,6 +174,7 @@ const app = Vue.createApp({
         }
     },
     mounted() {
+        // Check vCenter status when the application is mounted
         this.checkVCenterStatus();
         // Set up polling to refresh VM data every 30 seconds if connected
         setInterval(() => {
