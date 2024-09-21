@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, jsonify, request, send_from_directory, session
 from flask_cors import CORS
 from pyVmomi import vim
 from pyVim.connect import SmartConnect, Disconnect
@@ -10,22 +10,66 @@ import atexit
 
 app = Flask(__name__, static_folder='../frontend')
 CORS(app)
+app.secret_key = os.urandom(24)  # Set a secret key for session management
 
 # Load environment variables
 load_dotenv()
 
-# VMware vCenter connection details
-VCENTER_HOST = os.getenv('VCENTER_HOST')
-VCENTER_USER = os.getenv('VCENTER_USER')
-VCENTER_PASSWORD = os.getenv('VCENTER_PASSWORD')
-
 def get_vcenter_connection():
+    if 'vcenter_connection' not in session:
+        return None
+    
     context = ssl.create_default_context()
     context.check_hostname = False
     context.verify_mode = ssl.CERT_NONE
-    si = SmartConnect(host=VCENTER_HOST, user=VCENTER_USER, pwd=VCENTER_PASSWORD, sslContext=context)
-    atexit.register(Disconnect, si)
-    return si
+    
+    try:
+        si = SmartConnect(
+            host=session['vcenter_connection']['host'],
+            user=session['vcenter_connection']['user'],
+            pwd=session['vcenter_connection']['password'],
+            sslContext=context
+        )
+        atexit.register(Disconnect, si)
+        return si
+    except Exception as e:
+        print(f"Error connecting to vCenter: {str(e)}")
+        return None
+
+@app.route('/api/vcconnect', methods=['POST'])
+def vcconnect():
+    data = request.json
+    host = data.get('host')
+    user = data.get('user')
+    password = data.get('password')
+    
+    if not all([host, user, password]):
+        return jsonify({'status': 'error', 'message': 'Missing connection details'}), 400
+    
+    context = ssl.create_default_context()
+    context.check_hostname = False
+    context.verify_mode = ssl.CERT_NONE
+    
+    try:
+        si = SmartConnect(host=host, user=user, pwd=password, sslContext=context)
+        atexit.register(Disconnect, si)
+        session['vcenter_connection'] = {'host': host, 'user': user, 'password': password}
+        return jsonify({'status': 'success', 'message': 'Connected to vCenter successfully'})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': f'Failed to connect to vCenter: {str(e)}'}), 400
+
+@app.route('/api/vcdisconnect', methods=['POST'])
+def vcdisconnect():
+    if 'vcenter_connection' in session:
+        del session['vcenter_connection']
+    return jsonify({'status': 'success', 'message': 'Disconnected from vCenter'})
+
+@app.route('/api/vcstatus', methods=['GET'])
+def vcstatus():
+    if 'vcenter_connection' in session:
+        return jsonify({'status': 'connected', 'host': session['vcenter_connection']['host']})
+    else:
+        return jsonify({'status': 'disconnected'})
 
 def get_vm_by_name(si, vm_name):
     content = si.RetrieveContent()

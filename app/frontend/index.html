@@ -14,6 +14,36 @@
         <button @click="toggleDarkMode" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-4">
             Toggle Dark Mode
         </button>
+        
+        <!-- vCenter Connection Form -->
+        <div v-if="!isConnected" class="mb-8">
+            <h2 class="text-2xl font-bold mb-4">Connect to vCenter</h2>
+            <form @submit.prevent="connectToVCenter" class="space-y-4">
+                <div>
+                    <label for="host" class="block mb-1">vCenter Host:</label>
+                    <input v-model="vcenterHost" id="host" type="text" required class="w-full p-2 border rounded dark:bg-gray-700">
+                </div>
+                <div>
+                    <label for="user" class="block mb-1">Username:</label>
+                    <input v-model="vcenterUser" id="user" type="text" required class="w-full p-2 border rounded dark:bg-gray-700">
+                </div>
+                <div>
+                    <label for="password" class="block mb-1">Password:</label>
+                    <input v-model="vcenterPassword" id="password" type="password" required class="w-full p-2 border rounded dark:bg-gray-700">
+                </div>
+                <button type="submit" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                    Connect
+                </button>
+            </form>
+        </div>
+
+        <!-- vCenter Connection Status -->
+        <div v-else class="mb-8">
+            <p class="text-xl">Connected to vCenter: {{ vcenterHost }}</p>
+            <button @click="disconnectFromVCenter" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded mt-2">
+                Disconnect
+            </button>
+        </div>
         <div v-if="loading" class="text-center">
             <p class="text-xl">Loading VMs...</p>
         </div>
