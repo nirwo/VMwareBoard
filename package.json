@@ -1,0 +1,16 @@
+{
+  "name": "vmware-vcenter-management",
+  "version": "1.0.0",
+  "description": "VMware vCenter Management Application",
+  "main": "app/frontend/app.js",
+  "scripts": {
+    "start": "python app/backend/app.py"
+  },
+  "dependencies": {
+    "vue": "^3.2.31",
+    "axios": "^0.26.1"
+  },
+  "devDependencies": {},
+  "author": "Your Name",
+  "license": "MIT"
+}
