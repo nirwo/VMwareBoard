@@ -4,17 +4,22 @@ from pyVmomi import vim
 from pyVim.connect import SmartConnect, Disconnect
 import ssl
 import os
+from dotenv import load_dotenv
 
 app = Flask(__name__, static_folder='../frontend')
 CORS(app)
 
+# Load environment variables
+load_dotenv()
+
 # VMware vCenter connection details
-VCENTER_HOST = "your_vcenter_host"
-VCENTER_USER = "your_vcenter_username"
-VCENTER_PASSWORD = "your_vcenter_password"
+VCENTER_HOST = os.getenv('VCENTER_HOST')
+VCENTER_USER = os.getenv('VCENTER_USER')
+VCENTER_PASSWORD = os.getenv('VCENTER_PASSWORD')
 
 def get_vcenter_connection():
-    context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+    context = ssl.create_default_context()
+    context.check_hostname = False
     context.verify_mode = ssl.CERT_NONE
     return SmartConnect(host=VCENTER_HOST, user=VCENTER_USER, pwd=VCENTER_PASSWORD, sslContext=context)
 
@@ -47,6 +52,28 @@ def get_vms():
     
     Disconnect(si)
     return jsonify(vms)
+
+@app.route('/api/vm/<string:vm_name>/power', methods=['POST'])
+def power_vm(vm_name):
+    action = request.json.get('action')
+    si = get_vcenter_connection()
+    content = si.RetrieveContent()
+    container = content.rootFolder
+    view_type = [vim.VirtualMachine]
+    recursive = True
+    container_view = content.viewManager.CreateContainerView(container, view_type, recursive)
+    children = container_view.view
+    
+    for child in children:
+        if child.name == vm_name:
+            if action == 'on' and child.runtime.powerState == vim.VirtualMachinePowerState.poweredOff:
+                child.PowerOn()
+            elif action == 'off' and child.runtime.powerState == vim.VirtualMachinePowerState.poweredOn:
+                child.PowerOff()
+            break
+    
+    Disconnect(si)
+    return jsonify({'status': 'success', 'message': f'VM {vm_name} power {action} initiated'})
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5079)

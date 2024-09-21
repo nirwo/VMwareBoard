@@ -14,7 +14,16 @@
         <button @click="toggleDarkMode" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-4">
             Toggle Dark Mode
         </button>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div v-if="loading" class="text-center">
+            <p class="text-xl">Loading VMs...</p>
+        </div>
+        <div v-else-if="error" class="text-center text-red-500">
+            <p class="text-xl">{{ error }}</p>
+            <button @click="fetchVMs" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-4">
+                Retry
+            </button>
+        </div>
+        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div v-for="vm in vms" :key="vm.name" class="bg-white dark:bg-gray-800 p-4 rounded shadow">
                 <h2 class="text-xl font-semibold mb-2">{{ vm.name }}</h2>
                 <p>Power State: {{ vm.power_state }}</p>
