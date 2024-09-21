@@ -8,7 +8,7 @@ const app = Vue.createApp({
     methods: {
         async fetchVMs() {
             try {
-                const response = await axios.get('http://localhost:5000/api/vms');
+                const response = await axios.get('http://localhost:5079/api/vms');
                 this.vms = response.data;
             } catch (error) {
                 console.error('Error fetching VMs:', error);
