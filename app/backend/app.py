@@ -22,6 +22,7 @@ import atexit
 from concurrent.futures import ThreadPoolExecutor
 import logging
 import traceback
+from functools import wraps
 
 app = Flask(__name__, static_folder='../frontend')
 app.config['MAX_PARALLEL_TASKS'] = 5  # Default value, can be changed
