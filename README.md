@@ -51,10 +51,35 @@ This application provides a web-based interface for managing VMware vCenter envi
    cd ../..
    ```
 
+5. Deactivate the virtual environment when you're done:
+   ```
+   deactivate
+   ```
+
 Note: Always activate the virtual environment before running the application:
 ```
 source venv/bin/activate  # On Windows use `venv\Scripts\activate`
 ```
+
+## Development
+
+To update dependencies after making changes:
+
+1. Update backend dependencies:
+   ```
+   pip freeze > requirements.txt
+   ```
+
+2. Update frontend dependencies:
+   ```
+   npm update
+   ```
+
+3. Install updated dependencies:
+   ```
+   pip install -r requirements.txt
+   npm install
+   ```
 
 ## Configuration
 

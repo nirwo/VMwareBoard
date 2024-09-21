@@ -2,3 +2,14 @@ Flask==2.1.0
 flask-cors==3.0.10
 pyVmomi==7.0.3
 python-dotenv==0.19.2
+Werkzeug==2.0.3
+Jinja2==3.0.3
+itsdangerous==2.0.1
+click==8.0.4
+six==1.16.0
+requests==2.27.1
+MarkupSafe==2.1.1
+charset-normalizer==2.0.12
+idna==3.3
+urllib3==1.26.9
+certifi==2021.10.8
